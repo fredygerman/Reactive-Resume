@@ -6,7 +6,7 @@ version: "3.8"
 services:
   # Main Application
   reactive-resume:
-    image: 'amruthpillai/reactive-resume:latest'
+    image: "amruthpillai/reactive-resume:latest"
     restart: unless-stopped
     depends_on:
       - postgres
@@ -17,29 +17,29 @@ services:
       # -- Core Configuration --
       PORT: 3000
       NODE_ENV: production
-      
+
       # -- URLs --
       PUBLIC_URL: ${SERVICE_FQDN_REACTIVERESUME}
       STORAGE_URL: ${SERVICE_FQDN_MINIO}/default
-      
+
       # -- Database --
       DATABASE_URL: postgresql://${SERVICE_USER_POSTGRES}:${SERVICE_PASSWORD_POSTGRES}@postgres:5432/${POSTGRES_DB:-postgres}
-      
+
       # -- Authentication Secrets --
       ACCESS_TOKEN_SECRET: ${SERVICE_PASSWORD_ACCESSTOKEN}
       REFRESH_TOKEN_SECRET: ${SERVICE_PASSWORD_REFRESHTOKEN}
-      
+
       # -- Service Authentication (New Feature) --
       SERVICE_JWT_SECRET: ${SERVICE_JWT_SECRET}
       ALLOWED_SERVICE_PROVIDERS: ${ALLOWED_SERVICE_PROVIDERS:-my-app,external-service}
-      
+
       # -- Browser/Printing --
       CHROME_TOKEN: ${SERVICE_PASSWORD_CHROMETOKEN}
       CHROME_URL: ws://chrome:3000
-      
+
       # -- Redis Cache --
       REDIS_URL: redis://redis:6379
-      
+
       # -- Storage (MinIO) --
       STORAGE_ENDPOINT: minio
       STORAGE_PORT: 9000
@@ -49,46 +49,50 @@ services:
       STORAGE_SECRET_KEY: ${SERVICE_PASSWORD_MINIO}
       STORAGE_USE_SSL: false
       STORAGE_SKIP_BUCKET_CHECK: false
-      
+
       # -- Email Configuration --
       MAIL_FROM: ${MAIL_FROM:-noreply@yourdomain.com}
-      SMTP_URL: ${SMTP_URL}
-      
+      SMTP_URL: ${SMTP_URL:-smtp://disabled:disabled@localhost:587}
+
       # -- Feature Flags --
       DISABLE_SIGNUPS: ${SERVICE_DISABLE_SIGNUPS:-false}
       DISABLE_EMAIL_AUTH: ${SERVICE_DISABLE_EMAIL_AUTH:-false}
-      
+
       # -- OAuth Providers (Optional) --
-      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID}
-      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
-      GITHUB_CALLBACK_URL: ${SERVICE_FQDN_REACTIVERESUME}/api/auth/github/callback
-      
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
-      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
-      GOOGLE_CALLBACK_URL: ${SERVICE_FQDN_REACTIVERESUME}/api/auth/google/callback
-      
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-disabled}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-disabled}
+      GITHUB_CALLBACK_URL: ${SERVICE_FQDN_REACTIVERESUME:-http://localhost:3000}/api/auth/github/callback
+
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-disabled}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-disabled}
+      GOOGLE_CALLBACK_URL: ${SERVICE_FQDN_REACTIVERESUME:-http://localhost:3000}/api/auth/google/callback
+
       # -- Monitoring --
       SENTRY_DSN: ${SENTRY_DSN}
 
   # Database
   postgres:
-    image: 'postgres:16-alpine'
+    image: "postgres:16-alpine"
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-postgres}
-      POSTGRES_USER: ${SERVICE_USER_POSTGRES}
+      POSTGRES_USER: ${SERVICE_USER_POSTGRES:-postgres}
       POSTGRES_PASSWORD: ${SERVICE_PASSWORD_POSTGRES}
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${SERVICE_USER_POSTGRES} -d ${POSTGRES_DB:-postgres}"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${SERVICE_USER_POSTGRES:-postgres} -d ${POSTGRES_DB:-postgres}",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
 
   # Object Storage
   minio:
-    image: 'quay.io/minio/minio:latest'
+    image: "quay.io/minio/minio:latest"
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
@@ -106,7 +110,7 @@ services:
 
   # Browser for PDF Generation
   chrome:
-    image: 'ghcr.io/browserless/chromium:latest'
+    image: "ghcr.io/browserless/chromium:latest"
     restart: unless-stopped
     platform: linux/amd64
     environment:
@@ -121,7 +125,7 @@ services:
 
   # Redis Cache
   redis:
-    image: 'redis:7-alpine'
+    image: "redis:7-alpine"
     restart: unless-stopped
     command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
     volumes:

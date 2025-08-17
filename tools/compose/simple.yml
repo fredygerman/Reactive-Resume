@@ -7,6 +7,8 @@ services:
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
+    ports:
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
@@ -36,6 +38,8 @@ services:
   chrome:
     image: ghcr.io/browserless/chromium:latest
     restart: unless-stopped
+    ports:
+      - "8080:3000"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
@@ -46,7 +50,7 @@ services:
       PROXY_SSL: "false"
 
   app:
-    image: amruthpillai/reactive-resume:latest
+    build: .
     restart: unless-stopped
     ports:
       - "3000:3000"
@@ -73,6 +77,10 @@ services:
       # -- Auth --
       ACCESS_TOKEN_SECRET: access_token_secret
       REFRESH_TOKEN_SECRET: refresh_token_secret
+
+      # -- Service Auth --
+      SERVICE_JWT_SECRET: service_jwt_secret
+      ALLOWED_SERVICE_PROVIDERS: my-app,external-service
 
       # -- Emails --
       MAIL_FROM: noreply@localhost

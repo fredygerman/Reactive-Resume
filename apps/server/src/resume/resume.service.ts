@@ -162,4 +162,15 @@ export class ResumeService {
   printPreview(resume: ResumeDto) {
     return this.printerService.printPreview(resume);
   }
+
+  // Service-specific methods for external app integration
+  async generatePdfUrl(resumeId: string, userId: string) {
+    const resume = await this.findOne(resumeId, userId);
+    return this.printerService.printResume(resume as ResumeDto);
+  }
+
+  async generatePreviewUrl(resumeId: string, userId: string) {
+    const resume = await this.findOne(resumeId, userId);
+    return this.printerService.printPreview(resume as ResumeDto);
+  }
 }

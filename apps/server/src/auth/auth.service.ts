@@ -368,4 +368,50 @@ export class AuthService {
 
     return user;
   }
+
+  // Service Authentication Methods
+  async getOrCreateServiceUser(
+    externalId: string,
+    serviceProvider: string,
+  ): Promise<UserWithSecrets> {
+    try {
+      // Try to find existing service user
+      let user = await this.userService.findServiceUser(externalId, serviceProvider);
+
+      if (!user) {
+        // Create new service user
+        user = await this.userService.create({
+          email: `${externalId}@${serviceProvider}.service`,
+          name: `Service User ${externalId}`,
+          username: `${serviceProvider}-${externalId}`,
+          externalId,
+          serviceProvider,
+          isServiceUser: true,
+          emailVerified: true, // Skip email verification for service users
+          provider: "email",
+          secrets: { create: {} }, // No password needed for service users
+        });
+      }
+
+      return user;
+    } catch (error) {
+      Logger.error(error);
+      throw new InternalServerErrorException("Failed to create service user");
+    }
+  }
+
+  generateServiceToken(externalId: string, serviceProvider: string): string {
+    return this.jwtService.sign(
+      {
+        externalId,
+        serviceProvider,
+        type: "service",
+        iat: Math.floor(Date.now() / 1000),
+      },
+      {
+        secret: this.configService.get("SERVICE_JWT_SECRET"),
+        expiresIn: "24h", // Service tokens expire in 24 hours
+      },
+    );
+  }
 }

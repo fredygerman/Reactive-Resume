@@ -17,6 +17,10 @@ export const configSchema = z.object({
   ACCESS_TOKEN_SECRET: z.string(),
   REFRESH_TOKEN_SECRET: z.string(),
 
+  // Service Authentication (Optional)
+  SERVICE_JWT_SECRET: z.string().optional(),
+  ALLOWED_SERVICE_PROVIDERS: z.string().optional(),
+
   // Browser
   CHROME_TOKEN: z.string(),
   CHROME_URL: z.string().url(),

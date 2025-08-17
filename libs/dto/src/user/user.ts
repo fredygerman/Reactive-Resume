@@ -29,6 +29,10 @@ export const userSchema = z.object({
   provider: z.enum(["email", "github", "google", "openid"]).default("email"),
   createdAt: dateSchema,
   updatedAt: dateSchema,
+  // Service user fields - optional for backward compatibility
+  externalId: z.string().nullable().default(null),
+  serviceProvider: z.string().nullable().default(null),
+  isServiceUser: z.boolean().default(false),
 });
 
 export class UserDto extends createZodDto(userSchema) {}

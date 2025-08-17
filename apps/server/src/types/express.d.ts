@@ -5,6 +5,12 @@ declare global {
     // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
     interface Request {
       user?: PrismaUser;
+      service?: {
+        externalId: string;
+        serviceProvider: string;
+        type: string;
+        iat: number;
+      };
       payload?: {
         resume: Resume;
       };

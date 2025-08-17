@@ -70,6 +70,23 @@ export class UserService {
     return user;
   }
 
+  async findServiceUser(
+    externalId: string,
+    serviceProvider: string,
+  ): Promise<UserWithSecrets | null> {
+    const user = await this.prisma.user.findFirst({
+      where: {
+        externalId,
+        serviceProvider,
+        isServiceUser: true,
+      },
+      include: { secrets: true },
+    });
+
+    // Type assertion after we know the secrets are included
+    return user as UserWithSecrets | null;
+  }
+
   create(data: Prisma.UserCreateInput): Promise<UserWithSecrets> {
     return this.prisma.user.create({ data, include: { secrets: true } });
   }

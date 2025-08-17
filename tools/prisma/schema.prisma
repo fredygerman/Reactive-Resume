@@ -31,8 +31,13 @@ model User {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
   provider         Provider
+  externalId       String?  // External app user ID
+  serviceProvider  String?  // Name of the service/app
+  isServiceUser    Boolean  @default(false)
   secrets          Secrets?
   resumes          Resume[]
+
+  @@unique([externalId, serviceProvider])
 }
 
 model Secrets {

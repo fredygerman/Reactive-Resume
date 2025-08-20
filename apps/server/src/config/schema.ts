@@ -7,8 +7,8 @@ export const configSchema = z.object({
   PORT: z.coerce.number().default(3000),
 
   // URLs
-  PUBLIC_URL: z.string(),
-  STORAGE_URL: z.string(),
+  PUBLIC_URL: z.string().url(),
+  STORAGE_URL: z.string().url(),
 
   // Database (Prisma)
   DATABASE_URL: z.string().url().startsWith("postgresql://"),

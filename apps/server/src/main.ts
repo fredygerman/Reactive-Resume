@@ -14,6 +14,10 @@ import type { Config } from "./config/schema";
 patchNestJsSwagger();
 
 async function bootstrap() {
+  Logger.log(`PUBLIC_URL: ${process.env.PUBLIC_URL}`);
+  Logger.log(`STORAGE_URL: ${process.env.STORAGE_URL}`);
+  Logger.log(`DATABASE_URL: ${process.env.DATABASE_URL}`);
+
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     logger: process.env.NODE_ENV === "development" ? ["debug"] : ["error", "warn", "log"],
   });

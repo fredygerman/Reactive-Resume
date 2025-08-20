@@ -1,0 +1,63 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data
+    ports:
+      - "9000:9000"
+    volumes:
+      - minio_data:/data
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+
+  app:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres
+      - minio
+    environment:
+      PORT: 3000
+      NODE_ENV: production
+      PUBLIC_URL: http://localhost:3000
+      STORAGE_URL: http://localhost:9000/default
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/postgres
+      ACCESS_TOKEN_SECRET: access_token_secret
+      REFRESH_TOKEN_SECRET: refresh_token_secret
+      SERVICE_JWT_SECRET: service_jwt_secret
+      ALLOWED_SERVICE_PROVIDERS: my-app,external-service
+      MAIL_FROM: noreply@localhost
+      STORAGE_ENDPOINT: minio
+      STORAGE_PORT: 9000
+      STORAGE_REGION: us-east-1
+      STORAGE_BUCKET: default
+      STORAGE_ACCESS_KEY: minioadmin
+      STORAGE_SECRET_KEY: minioadmin
+      STORAGE_USE_SSL: "false"
+      STORAGE_SKIP_BUCKET_CHECK: "false"
+
+volumes:
+  minio_data:
+  postgres_data:

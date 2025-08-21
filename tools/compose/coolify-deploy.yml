@@ -30,6 +30,16 @@ services:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
 
+  chrome:
+    image: ghcr.io/browserless/chromium:latest
+    restart: unless-stopped
+    environment:
+      HEALTH: "true"
+      TOKEN: chrome_token
+      PROXY_HOST: "chrome"
+      PROXY_PORT: 3000
+      PROXY_SSL: "false"
+
   app:
     build: .
     restart: unless-stopped
@@ -38,25 +48,28 @@ services:
     depends_on:
       - postgres
       - minio
+      - chrome
     environment:
       PORT: 3000
       NODE_ENV: production
-      PUBLIC_URL: http://localhost:3000
-      STORAGE_URL: http://localhost:9000/default
+      PUBLIC_URL: http://localhost:3000 # Change to your public domain if needed
+      STORAGE_URL: http://localhost:9000/default # Change if using a different storage endpoint
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/postgres
-      ACCESS_TOKEN_SECRET: access_token_secret
-      REFRESH_TOKEN_SECRET: refresh_token_secret
-      SERVICE_JWT_SECRET: service_jwt_secret
+      ACCESS_TOKEN_SECRET: access_token_secret # Use a strong secret in production
+      REFRESH_TOKEN_SECRET: refresh_token_secret # Use a strong secret in production
+      SERVICE_JWT_SECRET: service_jwt_secret # Use a strong secret in production
       ALLOWED_SERVICE_PROVIDERS: my-app,external-service
-      MAIL_FROM: noreply@localhost
+      MAIL_FROM: noreply@yourdomain.com # Set to your real sender address
       STORAGE_ENDPOINT: minio
       STORAGE_PORT: 9000
-      STORAGE_REGION: us-east-1
+      STORAGE_REGION: us-east-1 # Change if needed
       STORAGE_BUCKET: default
-      STORAGE_ACCESS_KEY: minioadmin
-      STORAGE_SECRET_KEY: minioadmin
-      STORAGE_USE_SSL: "false"
+      STORAGE_ACCESS_KEY: minioadmin # Use strong credentials in production
+      STORAGE_SECRET_KEY: minioadmin # Use strong credentials in production
+      STORAGE_USE_SSL: "false" # Set to "true" if using SSL
       STORAGE_SKIP_BUCKET_CHECK: "false"
+      CHROME_TOKEN: chrome_token # Required by app, dummy value if not using Chrome
+      CHROME_URL: ws://chrome:3000
 
 volumes:
   minio_data:

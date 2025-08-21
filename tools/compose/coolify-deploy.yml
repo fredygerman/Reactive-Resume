@@ -5,13 +5,13 @@ services:
     image: postgres:16-alpine
     restart: unless-stopped
     ports:
-      - "5433:5432"
+      - "${POSTGRES_PORT:-5433}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
-      POSTGRES_DB: postgres
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
       interval: 10s
@@ -23,19 +23,19 @@ services:
     restart: unless-stopped
     command: server /data
     ports:
-      - "9000:9000"
+      - "${MINIO_PORT:-9001}:9000"
     volumes:
       - minio_data:/data
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
 
   chrome:
     image: ghcr.io/browserless/chromium:latest
     restart: unless-stopped
     environment:
       HEALTH: "true"
-      TOKEN: chrome_token
+      TOKEN: ${CHROME_TOKEN:-chrome_token}
       PROXY_HOST: "chrome"
       PROXY_PORT: 3000
       PROXY_SSL: "false"
@@ -44,32 +44,32 @@ services:
     build: .
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "${APP_PORT:-3000}:3000"
     depends_on:
       - postgres
       - minio
       - chrome
     environment:
       PORT: 3000
-      NODE_ENV: production
-      PUBLIC_URL: http://localhost:3000 # Change to your public domain if needed
-      STORAGE_URL: http://localhost:9000/default # Change if using a different storage endpoint
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/postgres
-      ACCESS_TOKEN_SECRET: access_token_secret # Use a strong secret in production
-      REFRESH_TOKEN_SECRET: refresh_token_secret # Use a strong secret in production
-      SERVICE_JWT_SECRET: service_jwt_secret # Use a strong secret in production
-      ALLOWED_SERVICE_PROVIDERS: my-app,external-service
-      MAIL_FROM: noreply@yourdomain.com # Set to your real sender address
+      NODE_ENV: ${NODE_ENV:-production}
+      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:3000}
+      STORAGE_URL: ${STORAGE_URL:-http://localhost:9001/default}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/postgres}
+      ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET:-access_token_secret}
+      REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET:-refresh_token_secret}
+      SERVICE_JWT_SECRET: ${SERVICE_JWT_SECRET:-service_jwt_secret}
+      ALLOWED_SERVICE_PROVIDERS: ${ALLOWED_SERVICE_PROVIDERS:-my-app,external-service}
+      MAIL_FROM: ${MAIL_FROM:-noreply@yourdomain.com}
       STORAGE_ENDPOINT: minio
-      STORAGE_PORT: 9000
-      STORAGE_REGION: us-east-1 # Change if needed
-      STORAGE_BUCKET: default
-      STORAGE_ACCESS_KEY: minioadmin # Use strong credentials in production
-      STORAGE_SECRET_KEY: minioadmin # Use strong credentials in production
-      STORAGE_USE_SSL: "false" # Set to "true" if using SSL
-      STORAGE_SKIP_BUCKET_CHECK: "false"
-      CHROME_TOKEN: chrome_token # Required by app, dummy value if not using Chrome
-      CHROME_URL: ws://chrome:3000
+      STORAGE_PORT: ${MINIO_INTERNAL_PORT:-9000}
+      STORAGE_REGION: ${STORAGE_REGION:-us-east-1}
+      STORAGE_BUCKET: ${STORAGE_BUCKET:-default}
+      STORAGE_ACCESS_KEY: ${STORAGE_ACCESS_KEY:-minioadmin}
+      STORAGE_SECRET_KEY: ${STORAGE_SECRET_KEY:-minioadmin}
+      STORAGE_USE_SSL: ${STORAGE_USE_SSL:-false}
+      STORAGE_SKIP_BUCKET_CHECK: ${STORAGE_SKIP_BUCKET_CHECK:-false}
+      CHROME_TOKEN: ${CHROME_TOKEN:-chrome_token}
+      CHROME_URL: ${CHROME_URL:-ws://chrome:3000}
 
 volumes:
   minio_data:

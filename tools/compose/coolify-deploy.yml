@@ -50,7 +50,6 @@ services:
       - minio
       - chrome
     environment:
-      PORT: 3000
       NODE_ENV: ${NODE_ENV:-production}
       PUBLIC_URL: ${PUBLIC_URL:-http://localhost:3000}
       STORAGE_URL: ${STORAGE_URL:-http://localhost:9001/default}

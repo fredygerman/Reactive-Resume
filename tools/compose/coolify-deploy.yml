@@ -42,7 +42,6 @@ services:
     image: ghcr.io/browserless/chromium:latest
     restart: unless-stopped
     environment:
-      HEALTH: "true"
       TOKEN: ${CHROME_TOKEN:-chrome_token}
       TIMEOUT: 30000
       CONCURRENT: 10
@@ -51,10 +50,11 @@ services:
       DEFAULT_IGNORE_HTTPS_ERRORS: "true"
       DEFAULT_IGNORE_DEFAULT_ARGS: "true"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
       interval: 30s
-      timeout: 10s
-      retries: 3
+      timeout: 20s
+      retries: 5
+      start_period: 30s
 
   app:
     build: .
@@ -67,7 +67,7 @@ services:
       minio:
         condition: service_healthy
       chrome:
-        condition: service_healthy
+        condition: service_started
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       PUBLIC_URL: ${PUBLIC_URL:-http://localhost:3000}

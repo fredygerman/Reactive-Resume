@@ -44,6 +44,22 @@ services:
       timeout: 10s
       retries: 3
 
+  minio-setup:
+    image: minio/mc:latest
+    depends_on:
+      - minio
+    networks:
+      - app_network
+    restart: "no"
+    entrypoint: >
+      /bin/sh -c "
+      sleep 5;
+      /usr/bin/mc alias set myminio http://minio:9000 ${MINIO_ROOT_USER:-minioadmin} ${MINIO_ROOT_PASSWORD:-minioadmin};
+      /usr/bin/mc mb myminio/${STORAGE_BUCKET:-default} --ignore-existing;
+      /usr/bin/mc anonymous set download myminio/${STORAGE_BUCKET:-default};
+      exit 0;
+      "
+
   chrome:
     image: ghcr.io/browserless/chromium:latest
     restart: unless-stopped

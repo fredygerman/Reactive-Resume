@@ -14,34 +14,18 @@ services:
       - postgres_data:/var/lib/postgresql/data
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-postgres}
-      POSTGRES_USER: $SERVICE_USER_POSTGRES
-      POSTGRES_PASSWORD: $SERVICE_PASSWORD_POSTGRES
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     networks:
       - app_network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-postgres}"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  redis:
-    image: redis:7-alpine
-    restart: unless-stopped
-    command: redis-server
-    expose:
-      - "6379"
-    volumes:
-      - redis_data:/data
-    networks:
-      - app_network
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 20s
-      retries: 10
-
   minio:
-    image: quay.io/minio/minio:latest
+    image: minio/minio:latest
     restart: unless-stopped
     command: server /data --console-address ":9001"
     expose:
@@ -50,14 +34,12 @@ services:
     volumes:
       - minio_data:/data
     environment:
-      MINIO_SERVER_URL: $SERVICE_FQDN_MINIO
-      MINIO_BROWSER_REDIRECT_URL: $SERVICE_FQDN_MINIO_CONSOLE
-      MINIO_ROOT_USER: $SERVICE_USER_MINIO
-      MINIO_ROOT_PASSWORD: $SERVICE_PASSWORD_MINIO
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
     networks:
       - app_network
     healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 20s
       timeout: 10s
       retries: 3
@@ -65,32 +47,32 @@ services:
   minio-setup:
     image: minio/mc:latest
     depends_on:
-      minio:
-        condition: service_healthy
+      - minio
     networks:
       - app_network
     restart: "no"
     entrypoint: >
       /bin/sh -c "
       sleep 5;
-      /usr/bin/mc alias set myminio http://minio:9000 $SERVICE_USER_MINIO $SERVICE_PASSWORD_MINIO;
-      /usr/bin/mc mb myminio/${STORAGE_BUCKET:-default} --ignore-existing;
-      /usr/bin/mc anonymous set download myminio/${STORAGE_BUCKET:-default};
-      echo 'MinIO setup completed successfully';
+      /usr/bin/mc alias set myminio http://minio:9000 ${MINIO_ROOT_USER:-minioadmin} ${MINIO_ROOT_PASSWORD:-minioadmin};
+      /usr/bin/mc mb myminio/${STORAGE_BUCKET:-reactive-resume} --ignore-existing;
+      /usr/bin/mc anonymous set download myminio/${STORAGE_BUCKET:-reactive-resume};
       exit 0;
       "
 
   chrome:
-    image: ghcr.io/browserless/chrome:latest
-    platform: linux/amd64
+    image: ghcr.io/browserless/chromium:latest
     restart: unless-stopped
     expose:
       - "3000"
     environment:
-      HEALTH: "true"
-      TIMEOUT: 10000
+      TOKEN: ${CHROME_TOKEN:-chrome_token}
+      TIMEOUT: 30000
       CONCURRENT: 10
-      TOKEN: $SERVICE_PASSWORD_CHROMETOKEN
+      CHROME_REFRESH_TIME: 2147483647
+      DEFAULT_BLOCK_ADS: "true"
+      DEFAULT_IGNORE_HTTPS_ERRORS: "true"
+      DEFAULT_IGNORE_DEFAULT_ARGS: "true"
     networks:
       - app_network
     healthcheck:
@@ -100,7 +82,7 @@ services:
           "curl",
           "-f",
           "-H",
-          "Authorization: Bearer $SERVICE_PASSWORD_CHROMETOKEN",
+          "Authorization: Bearer ${CHROME_TOKEN:-chrome_token}",
           "http://localhost:3000/json/version",
         ]
       interval: 20s
@@ -116,40 +98,34 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
+      minio:
         condition: service_healthy
-      minio-setup:
-        condition: service_completed_successfully
       chrome:
-        condition: service_healthy
+        condition: service_started
     networks:
       - app_network
     environment:
-      SERVICE_FQDN_REACTIVERESUME_3000: ""
-      PUBLIC_URL: $SERVICE_FQDN_REACTIVERESUME
-      STORAGE_URL: ${SERVICE_FQDN_MINIO}/${STORAGE_BUCKET:-default}
-      DATABASE_URL: postgresql://$SERVICE_USER_POSTGRES:$SERVICE_PASSWORD_POSTGRES@postgres:5432/${POSTGRES_DB:-postgres}
-      ACCESS_TOKEN_SECRET: $SERVICE_PASSWORD_ACCESSTOKEN
-      REFRESH_TOKEN_SECRET: $SERVICE_PASSWORD_REFRESHTOKEN
-      SERVICE_JWT_SECRET: $SERVICE_PASSWORD_SERVICEJWT
-      CHROME_TOKEN: $SERVICE_PASSWORD_CHROMETOKEN
-      CHROME_URL: ws://chrome:3000/chrome
-      REDIS_URL: redis://redis:6379
+      NODE_ENV: ${NODE_ENV:-production}
+      PUBLIC_URL: ${PUBLIC_URL}
+      DATABASE_URL: ${DATABASE_URL}
+      ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET}
+      REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET}
+      SERVICE_JWT_SECRET: ${SERVICE_JWT_SECRET}
+      ALLOWED_SERVICE_PROVIDERS: ${ALLOWED_SERVICE_PROVIDERS:-my-app,external-service}
+      MAIL_FROM: ${MAIL_FROM:-noreply@smarcrib.site}
       STORAGE_ENDPOINT: minio
       STORAGE_PORT: 9000
       STORAGE_REGION: ${STORAGE_REGION:-us-east-1}
-      STORAGE_BUCKET: ${STORAGE_BUCKET:-default}
-      STORAGE_ACCESS_KEY: $SERVICE_USER_MINIO
-      STORAGE_SECRET_KEY: $SERVICE_PASSWORD_MINIO
-      STORAGE_USE_SSL: "false"
-      STORAGE_SKIP_BUCKET_CHECK: "false"
+      STORAGE_BUCKET: ${STORAGE_BUCKET:-reactive-resume}
+      STORAGE_ACCESS_KEY: ${STORAGE_ACCESS_KEY}
+      STORAGE_SECRET_KEY: ${STORAGE_SECRET_KEY}
+      STORAGE_USE_SSL: ${STORAGE_USE_SSL:-false}
+      STORAGE_SKIP_BUCKET_CHECK: ${STORAGE_SKIP_BUCKET_CHECK:-false}
       STORAGE_FORCE_PATH_STYLE: "true"
-      DISABLE_SIGNUPS: ${SERVICE_DISABLE_SIGNUPS:-false}
-      DISABLE_EMAIL_AUTH: ${SERVICE_DISABLE_EMAIL_AUTH:-false}
-      ALLOWED_SERVICE_PROVIDERS: ${ALLOWED_SERVICE_PROVIDERS:-my-app,external-service}
-      MAIL_FROM: ${MAIL_FROM:-noreply@smarcrib.site}
+      STORAGE_URL: ${STORAGE_URL}
+      CHROME_TOKEN: ${CHROME_TOKEN}
+      CHROME_URL: ${CHROME_URL:-ws://chrome:3000}
 
 volumes:
   minio_data:
   postgres_data:
-  redis_data:

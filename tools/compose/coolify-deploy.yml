@@ -50,13 +50,28 @@ services:
       - minio
     networks:
       - app_network
-    restart: "no"
-    entrypoint: >
+    restart: no
+    entrypoint: |
       /bin/sh -c "
-      sleep 5;
+      sleep 10;
       /usr/bin/mc alias set myminio http://minio:9000 ${MINIO_ROOT_USER:-minioadmin} ${MINIO_ROOT_PASSWORD:-minioadmin};
-      /usr/bin/mc mb myminio/${STORAGE_BUCKET:-default} --ignore-existing;
-      /usr/bin/mc anonymous set download myminio/${STORAGE_BUCKET:-default};
+      /usr/bin/mc mb myminio/${STORAGE_BUCKET:-reactive-resume} --ignore-existing;
+      /usr/bin/mc anonymous set download myminio/${STORAGE_BUCKET:-reactive-resume};
+      /usr/bin/mc anonymous set download myminio/${STORAGE_BUCKET:-reactive-resume}/*;
+      echo 'Creating wildcard policy for all buckets...';
+      echo '{
+        \"Version\": \"2012-10-17\",
+        \"Statement\": [
+          {
+            \"Effect\": \"Allow\",
+            \"Principal\": {\"AWS\": [\"*\"]},
+            \"Action\": [\"s3:GetObject\"],
+            \"Resource\": [\"arn:aws:s3:::*/*\"]
+          }
+        ]
+      }' > /tmp/public-policy.json;
+      /usr/bin/mc admin policy create myminio public-read-all /tmp/public-policy.json || echo 'Policy creation failed, continuing...';
+      echo 'MinIO setup complete';
       exit 0;
       "
 
@@ -122,6 +137,7 @@ services:
       STORAGE_SECRET_KEY: ${STORAGE_SECRET_KEY}
       STORAGE_USE_SSL: ${STORAGE_USE_SSL:-false}
       STORAGE_SKIP_BUCKET_CHECK: ${STORAGE_SKIP_BUCKET_CHECK:-false}
+      STORAGE_FORCE_PATH_STYLE: ${STORAGE_FORCE_PATH_STYLE:-true}
       CHROME_TOKEN: ${CHROME_TOKEN}
       CHROME_URL: ${CHROME_URL:-ws://chrome:3000}
 

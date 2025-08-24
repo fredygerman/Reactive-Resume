@@ -55,8 +55,8 @@ services:
       /bin/sh -c "
       sleep 5;
       /usr/bin/mc alias set myminio http://minio:9000 ${MINIO_ROOT_USER:-minioadmin} ${MINIO_ROOT_PASSWORD:-minioadmin};
-      /usr/bin/mc mb myminio/${STORAGE_BUCKET:-default} --ignore-existing;
-      /usr/bin/mc anonymous set download myminio/${STORAGE_BUCKET:-default};
+      /usr/bin/mc mb myminio/${STORAGE_BUCKET:-reactive-resume} --ignore-existing;
+      /usr/bin/mc anonymous set download myminio/${STORAGE_BUCKET:-reactive-resume};
       exit 0;
       "
 
@@ -107,7 +107,6 @@ services:
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       PUBLIC_URL: ${PUBLIC_URL}
-      STORAGE_URL: ${STORAGE_URL}
       DATABASE_URL: ${DATABASE_URL}
       ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET}
       REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET}
@@ -122,6 +121,8 @@ services:
       STORAGE_SECRET_KEY: ${STORAGE_SECRET_KEY}
       STORAGE_USE_SSL: ${STORAGE_USE_SSL:-false}
       STORAGE_SKIP_BUCKET_CHECK: ${STORAGE_SKIP_BUCKET_CHECK:-false}
+      STORAGE_FORCE_PATH_STYLE: "true"
+      STORAGE_URL: ${STORAGE_URL}
       CHROME_TOKEN: ${CHROME_TOKEN}
       CHROME_URL: ${CHROME_URL:-ws://chrome:3000}
 
